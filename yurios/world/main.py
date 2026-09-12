@@ -169,6 +169,10 @@ class Runtime:
         self.brain = brain if brain is not None else runtime.build_brain(
             self, chat_model=chat_model, utility_model=utility_model,
             embedder=embedder)
+        # Is her body on a screen right now? (SPEC §2.5) The hub knows: the
+        # sanctuary and the Live2D room count, the text room does not.
+        if hasattr(self.brain, "set_body_probe"):
+            self.brain.set_body_probe(lambda: self.hub.body_viewers > 0)
         #: Whether this brain can carry a mind, asked once instead of one
         #: attribute at a time (world/brain_protocol.py). A `ToolBrain` can; the
         #: conversational fake a route test injects cannot, and everything the
