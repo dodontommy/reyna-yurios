@@ -49,6 +49,9 @@ deploy/claw/reset-reyna.sh reyna data/cards/reyna.png     # import + approve (+ 
 
 The card itself (`data/cards/reyna.png`) is private and is not in git; copy it over with `scp`.
 
+The unit sets `TZ=America/Chicago`: Claw's own clock is UTC, and message stamps, the
+situation block's clock line and the DREAM window all use the process timezone.
+
 ## Redeploy
 
 ```bash

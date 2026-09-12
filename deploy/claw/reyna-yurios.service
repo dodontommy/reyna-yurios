@@ -13,6 +13,9 @@ ExecStart=%h/reyna-yurios/.venv/bin/python -m yurios.cli start --foreground
 Restart=on-failure
 RestartSec=5
 Environment=PYTHONUNBUFFERED=1
+# Claw's system clock is UTC; she stamps messages, reads "the time right now"
+# and picks her DREAM hours in the owner's local time.
+Environment=TZ=America/Chicago
 
 [Install]
 WantedBy=default.target
