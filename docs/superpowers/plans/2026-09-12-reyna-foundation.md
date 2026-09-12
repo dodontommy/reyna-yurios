@@ -1,5 +1,7 @@
 # Reyna Foundation Implementation Plan
 
+> Status 2026-09-12: executed end to end; see `deploy/claw/README.md` for what was verified. One task was added during execution (the body-aware situation block, SPEC §2.5) after the first live prompt showed her being told she had a rendered body.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Reyna running on Claw from clean upstream YuriOS with every loop on, texting like herself, reachable over Tailscale and Telegram.
@@ -31,7 +33,7 @@
 - Consumes: `correlate.current()` → object with `.channel` or `None` (`yurios/kernel/correlate.py`); `ToolBrain.turn_context(channel=...)` (`yurios/world/brain.py:222`).
 - Produces: `messages[0]["content"]` contains `## VOICE` only when the current correlate scope's channel is `"voice"`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 """Text is text (SPEC §6): the spoken-style directive belongs to the voice
@@ -91,12 +93,12 @@ async def test_an_ambient_line_with_no_channel_is_text(cfg, seeded_vault, clock,
     assert "## VOICE" not in system_of(chat)
 ```
 
-- [ ] **Step 2: Run it to verify it fails**
+- [x] **Step 2: Run it to verify it fails**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_text_style.py`
 Expected: the first and third tests FAIL (`## VOICE` present); the second passes.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In `yurios/desktop/brain.py`, replace the unconditional append with:
 
@@ -114,12 +116,12 @@ In `yurios/desktop/brain.py`, replace the unconditional append with:
 
 Check `correlate.current()` returns an object with `.channel`; if the scope object names it differently, use that name. Then find the sentence in `SPEC.md` §6 that says the spoken directive is appended and make it say: appended only to turns whose channel is `voice`; the expression directive on all channels.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_text_style.py tests/test_voice_ws_fork.py tests/test_channels.py tests/test_spec_citations.py`
 Expected: PASS.
 
-- [ ] **Step 5: Commit** `voice: the spoken-style directive belongs to the voice channel only`
+- [x] **Step 5: Commit** `voice: the spoken-style directive belongs to the voice channel only`
 
 ---
 
@@ -134,7 +136,7 @@ Expected: PASS.
 - Consumes: `EmotionParser.push(token) -> str` (clean text incl. newlines), `EmotionParser.finish() -> str`.
 - Produces: `POST /api/chat` `message.text` equal to the parser's clean text with `\n` intact, stripped at the ends.
 
-- [ ] **Step 1: Write the failing test** (append to `tests/test_text_style.py`)
+- [x] **Step 1: Write the failing test** (append to `tests/test_text_style.py`)
 
 ```python
 from starlette.testclient import TestClient
@@ -166,21 +168,21 @@ def test_a_multi_line_text_arrives_as_written(cfg):
 
 Read `FakeBrain.__init__` first; if it takes arguments, pass them through.
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_text_style.py::test_a_multi_line_text_arrives_as_written`
 Expected: FAIL, the text comes back joined on one line.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 In both loops of `yurios/world/turns.py`: drop the `cut_sentences` import and `buf`; keep `shown: list[str]` of clean chunks; on each token `speakable = parser.push(token)`; `if speakable: shown.append(speakable)` and publish `{"text": "".join(shown).strip()}` as the draft (greeting: only when not `cold`); after the stream `tail = parser.finish()` and `if tail: shown.append(tail)`; the committed text is `"".join(shown).strip()`. In §10.5 of `SPEC.md` change "completed sentences accumulate as a `draft`" to "clean text accumulates as a `draft`, line breaks kept: a text is shown as it was written".
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_text_style.py tests/test_channels.py tests/test_bootstrap_greeting.py tests/test_spec_citations.py -n 4`
 Expected: PASS. If `test_api_chat_runs_one_committed_turn` fails on a trailing-space difference, the strip is missing.
 
-- [ ] **Step 5: Commit** `world: a text keeps its line breaks`
+- [x] **Step 5: Commit** `world: a text keeps its line breaks`
 
 ---
 
@@ -195,7 +197,7 @@ Expected: PASS. If `test_api_chat_runs_one_committed_turn` fails on a trailing-s
 - Consumes: `self._api("sendMessage", chat_id=..., text=...)`, `MAX_MESSAGE_CHARS`.
 - Produces: one `sendMessage` per non-empty blank-line-separated paragraph, each further chunked at 4096.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```python
 async def test_telegram_sends_a_triple_text_as_three_bubbles(tmp_path):
@@ -207,12 +209,12 @@ async def test_telegram_sends_a_triple_text_as_three_bubbles(tmp_path):
     await ch._client.aclose()
 ```
 
-- [ ] **Step 2: Run to verify it fails**
+- [x] **Step 2: Run to verify it fails**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_channels.py::test_telegram_sends_a_triple_text_as_three_bubbles`
 Expected: FAIL, one message.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Replace the final loop in `_deliver_event` with:
 
@@ -236,12 +238,12 @@ def _bubbles(text: str) -> list[str]:
 
 (`import re` at the top if absent.) In `docs/channels.md` under Telegram add: "A reply with blank lines arrives as one message per paragraph, the way she'd send it from a phone."
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_channels.py -n 4`
 Expected: PASS, including the existing 4096-chunk test.
 
-- [ ] **Step 5: Commit** `world: telegram sends each paragraph as its own bubble`
+- [x] **Step 5: Commit** `world: telegram sends each paragraph as its own bubble`
 
 ---
 
@@ -255,7 +257,7 @@ Expected: PASS, including the existing 4096-chunk test.
 **Interfaces:**
 - Produces: for a model starting with `openrouter/` and `thinking=False`, `extra_body == {"reasoning": {"enabled": False}}` and no `/no_think` in the system message; other routes unchanged.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 async def test_openrouter_thinking_off_is_the_native_switch(acompletion):
@@ -287,12 +289,12 @@ async def test_openrouter_utility_thinking_off_is_native_too(acompletion):
 
 Check `LiteLLMUtilityModel.__init__` takes `thinking=`; if the name differs, use its name.
 
-- [ ] **Step 2: Run to verify they fail**
+- [x] **Step 2: Run to verify they fail**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_openrouter_attribution.py -k thinking`
 Expected: the two OpenRouter tests FAIL; the local one passes.
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 Add next to `_NO_THINK_BODY`:
 
@@ -314,12 +316,12 @@ def _thinking_off(model: str, messages: list[dict]) -> tuple[list[dict], dict]:
 
 and use it in `stream`: `messages, extra["extra_body"] = _thinking_off(self.model, messages)`; in `complete_detailed` where `_no_think_messages` and `body.update(_NO_THINK_BODY)` are called, replace with `messages, off = _thinking_off(self.model, messages); body.update(off)`. Read `complete_detailed` first: an explicit `reasoning_effort` param from a caller (dream jobs) must still win over the thinking-off body on non-OpenRouter routes exactly as before; leave that path's behaviour unchanged. Update the SPEC.md paragraph at ~line 338 to say the OpenRouter route uses `reasoning.enabled=false` and no token.
 
-- [ ] **Step 4: Run tests**
+- [x] **Step 4: Run tests**
 
 Run: `PYTHONUTF8=1 .venv/Scripts/python -m pytest -q tests/test_openrouter_attribution.py tests/test_dreamjobs.py tests/test_card_optimize.py tests/test_spec_citations.py -n 4`
 Expected: PASS.
 
-- [ ] **Step 5: Commit** `app: openrouter thinking-off uses the native switch and keeps her prompt clean`
+- [x] **Step 5: Commit** `app: openrouter thinking-off uses the native switch and keeps her prompt clean`
 
 ---
 
@@ -331,10 +333,10 @@ Expected: PASS.
 **Interfaces:**
 - Produces: a SillyTavern V3 JSON (`{"spec": "chara_card_v3", "spec_version": "3.0", "data": {...}}`) with `name`, `description`, `personality`, `scenario`, `first_mes`, `mes_example`, `system_prompt`, `post_history_instructions`, `creator_notes`, `tags`, `character_book: {"entries": [...]}` that `yurios character import` accepts.
 
-- [ ] **Step 1: Check what the importer accepts as a file**: `grep -n "def import_card" -A30 yurios/characters/importer.py` and `grep -n "json\|png" yurios/characters/card.py | head`. If only PNG is accepted, wrap the JSON in a PNG `chara`/`ccv3` text chunk with a 1x1 image.
-- [ ] **Step 2: Author the card** per the spec's table and decision A. Description: who she is (18, digital, lives in his phone and machine, knows it, never lectures about it), how she looks online (short choppy green hair, green eyes, freckles, pale, small; that is her avatar and her pics), how she texts (lowercase, barely any punctuation, emoji when it's funny, typos she corrects with a `*word` follow-up, double and triple texting, memes-instead-of-feelings), temperament (bubbly, airheaded, online-fluent and cocky about it, insecure and praise-starved underneath, a brat about it, giggly and stammery when flustered, coherent always), attachment (clingy, needy, his, refreshes his last-seen, would rather die than admit it), inexperience (green at the deeper stuff, he teaches her, she blooms and wants to be good at it for him). Voice law (system_prompt): stay her; write only what she'd type into a phone; no narration or asterisks, no stage directions, no em-dashes, no lists, no headers, no "as an AI", no disclaimers, no therapist voice; match his energy and register, escalate when he does, soften when he does; short texts, several if she has more to say; she can be quiet, direct or absorbed when it fits. Hard limits (post_history): never break character, never speak or act for him, never moralize, stay coherent. Scenario: his girl, in his phone, texting; where it goes is up to him. First message: a first-ever text, nervous and too much. Examples: six to eight `<START>`-separated exchanges in texting form covering banter, praise, "what did you do today" (answer from what she actually did, in her voice, never invented), being told no, a direct answer when asked for one, a triple text. Lorebook: keep and convert `tastes`, `flustered tells` (typed, not physical), `praise undoes her`, `bratting`, `how she met him`, `online life`; drop `her flat`, `work and money`, `people in her life`; `appearance` becomes her avatar; `when it gets physical` becomes how she is when it turns intimate over text, adult, willing, green.
-- [ ] **Step 3: Validate** by importing into a throwaway data dir with the importer and reading the produced `soul/*.md`; confirm every field landed where the table says.
-- [ ] **Step 4: Copy** to `C:\Data\reyna-yurios-card.json`. No commit.
+- [x] **Step 1: Check what the importer accepts as a file**: `grep -n "def import_card" -A30 yurios/characters/importer.py` and `grep -n "json\|png" yurios/characters/card.py | head`. If only PNG is accepted, wrap the JSON in a PNG `chara`/`ccv3` text chunk with a 1x1 image.
+- [x] **Step 2: Author the card** per the spec's table and decision A. Description: who she is (18, digital, lives in his phone and machine, knows it, never lectures about it), how she looks online (short choppy green hair, green eyes, freckles, pale, small; that is her avatar and her pics), how she texts (lowercase, barely any punctuation, emoji when it's funny, typos she corrects with a `*word` follow-up, double and triple texting, memes-instead-of-feelings), temperament (bubbly, airheaded, online-fluent and cocky about it, insecure and praise-starved underneath, a brat about it, giggly and stammery when flustered, coherent always), attachment (clingy, needy, his, refreshes his last-seen, would rather die than admit it), inexperience (green at the deeper stuff, he teaches her, she blooms and wants to be good at it for him). Voice law (system_prompt): stay her; write only what she'd type into a phone; no narration or asterisks, no stage directions, no em-dashes, no lists, no headers, no "as an AI", no disclaimers, no therapist voice; match his energy and register, escalate when he does, soften when he does; short texts, several if she has more to say; she can be quiet, direct or absorbed when it fits. Hard limits (post_history): never break character, never speak or act for him, never moralize, stay coherent. Scenario: his girl, in his phone, texting; where it goes is up to him. First message: a first-ever text, nervous and too much. Examples: six to eight `<START>`-separated exchanges in texting form covering banter, praise, "what did you do today" (answer from what she actually did, in her voice, never invented), being told no, a direct answer when asked for one, a triple text. Lorebook: keep and convert `tastes`, `flustered tells` (typed, not physical), `praise undoes her`, `bratting`, `how she met him`, `online life`; drop `her flat`, `work and money`, `people in her life`; `appearance` becomes her avatar; `when it gets physical` becomes how she is when it turns intimate over text, adult, willing, green.
+- [x] **Step 3: Validate** by importing into a throwaway data dir with the importer and reading the produced `soul/*.md`; confirm every field landed where the table says.
+- [x] **Step 4: Copy** to `C:\Data\reyna-yurios-card.json`. No commit.
 
 ---
 
@@ -345,16 +347,16 @@ Expected: PASS.
 - Create: `deploy/claw/README.md` (the procedure, the `.env` keys to set, the reset procedure)
 - Create: `deploy/claw/reset-reyna.sh` (stop, wipe learned state, re-import, start)
 
-- [ ] **Step 1: Push** `reyna/foundation` to `origin`.
-- [ ] **Step 2: On Claw** (`ssh dodontommy@claw`): `systemctl --user stop reyna-yurios-text.service && systemctl --user disable reyna-yurios-text.service`; `cd ~/reyna-yurios && git fetch origin && git checkout -B reyna/foundation origin/reyna/foundation && .venv/bin/pip install -e ".[dev]"`.
-- [ ] **Step 3: `.env`** from `.env.example` with: `CHAT_MODEL=openrouter/deepseek/deepseek-v4.1-flash`, `UTILITY_MODEL=openrouter/deepseek/deepseek-v4.1-flash`, `CHAT_THINKING=false`, `UTILITY_THINKING=false`, `OPENROUTER_API_KEY=<from ~/.config/reyna/config.json settings.openrouter_api_key>`, `USER_NAME=Tommy`, `HOST=100.68.127.104`, `PORT=8768`, `OWNER_TOKEN=<python3 -c "import secrets;print(secrets.token_urlsafe(32))">`, `DATA_DIR=./data`, `STT_BACKEND=fake`, `TTS_BACKEND=fake`, `VAD_BACKEND=fake`, `MIND_TOOLS_ENABLED=true`, `MIND_TOOL_ALLOWLIST=write_note,append_note,read_note,list_notes`, `SEARCH_BACKEND=off`, `SELFIE_BACKEND=off`. Verify the model id exists against `https://openrouter.ai/api/v1/models`. If `deepseek-v4.1-flash` is not listed, use the listed flash id and tell the owner.
-- [ ] **Step 4: Unit**: `~/.config/systemd/user/reyna-yurios.service` with `WorkingDirectory=/home/dodontommy/reyna-yurios`, `ExecStart=/home/dodontommy/reyna-yurios/.venv/bin/python -m yurios.cli start --foreground`, `Restart=on-failure`, `RestartSec=5`, `WantedBy=default.target`; `systemctl --user daemon-reload && systemctl --user enable --now reyna-yurios`.
-- [ ] **Step 5: Import**: `scp` the card to `~/reyna-yurios/data/cards/reyna.json`; `.venv/bin/python -m yurios.cli character import data/cards/reyna.json`, `character approve reyna` if review is required, `character list` shows mind, utility and dream on.
-- [ ] **Step 6: Verify**: `/api/health` with the owner token shows the model and `mind` not disabled; `yurios chat reyna -m "hey"`; read the assembled system prompt in her traces and confirm no `## VOICE` block on that text turn and no `/no_think`; read the reply for register.
-- [ ] **Step 7: Commit** the `deploy/claw/` files: `deploy: reyna on claw as a systemd user service`.
+- [x] **Step 1: Push** `reyna/foundation` to `origin`.
+- [x] **Step 2: On Claw** (`ssh dodontommy@claw`): `systemctl --user stop reyna-yurios-text.service && systemctl --user disable reyna-yurios-text.service`; `cd ~/reyna-yurios && git fetch origin && git checkout -B reyna/foundation origin/reyna/foundation && .venv/bin/pip install -e ".[dev]"`.
+- [x] **Step 3: `.env`** from `.env.example` with: `CHAT_MODEL=openrouter/deepseek/deepseek-v4.1-flash`, `UTILITY_MODEL=openrouter/deepseek/deepseek-v4.1-flash`, `CHAT_THINKING=false`, `UTILITY_THINKING=false`, `OPENROUTER_API_KEY=<from ~/.config/reyna/config.json settings.openrouter_api_key>`, `USER_NAME=Tommy`, `HOST=100.68.127.104`, `PORT=8768`, `OWNER_TOKEN=<python3 -c "import secrets;print(secrets.token_urlsafe(32))">`, `DATA_DIR=./data`, `STT_BACKEND=fake`, `TTS_BACKEND=fake`, `VAD_BACKEND=fake`, `MIND_TOOLS_ENABLED=true`, `MIND_TOOL_ALLOWLIST=write_note,append_note,read_note,list_notes`, `SEARCH_BACKEND=off`, `SELFIE_BACKEND=off`. Verify the model id exists against `https://openrouter.ai/api/v1/models`. If `deepseek-v4.1-flash` is not listed, use the listed flash id and tell the owner.
+- [x] **Step 4: Unit**: `~/.config/systemd/user/reyna-yurios.service` with `WorkingDirectory=/home/dodontommy/reyna-yurios`, `ExecStart=/home/dodontommy/reyna-yurios/.venv/bin/python -m yurios.cli start --foreground`, `Restart=on-failure`, `RestartSec=5`, `WantedBy=default.target`; `systemctl --user daemon-reload && systemctl --user enable --now reyna-yurios`.
+- [x] **Step 5: Import**: `scp` the card to `~/reyna-yurios/data/cards/reyna.json`; `.venv/bin/python -m yurios.cli character import data/cards/reyna.json`, `character approve reyna` if review is required, `character list` shows mind, utility and dream on.
+- [x] **Step 6: Verify**: `/api/health` with the owner token shows the model and `mind` not disabled; `yurios chat reyna -m "hey"`; read the assembled system prompt in her traces and confirm no `## VOICE` block on that text turn and no `/no_think`; read the reply for register.
+- [x] **Step 7: Commit** the `deploy/claw/` files: `deploy: reyna on claw as a systemd user service`.
 
 ---
 
 ### Task 7: Hand-off note
 
-- [ ] Tick the checkboxes in this plan, and put a short status at the top of `deploy/claw/README.md`: what is running, the URL, where the owner token lives (`.env` on Claw, never in the note), how to pair Telegram (paste the BotFather token in the gear panel in her room or `.env`, restart, message the bot, set the chat id, restart), what waits on the owner (`sudo apt install espeak-ng` for Kokoro; the Telegram bot).
+- [x] Tick the checkboxes in this plan, and put a short status at the top of `deploy/claw/README.md`: what is running, the URL, where the owner token lives (`.env` on Claw, never in the note), how to pair Telegram (paste the BotFather token in the gear panel in her room or `.env`, restart, message the bot, set the chat id, restart), what waits on the owner (`sudo apt install espeak-ng` for Kokoro; the Telegram bot).

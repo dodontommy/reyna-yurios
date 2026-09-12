@@ -4,9 +4,20 @@ Claw (`claw.tailca933d.ts.net`, Ubuntu 24.04, no GPU) is her always-on home. Thi
 the whole deployment: one systemd user unit, one reset script, this page. Secrets live only
 in `~/reyna-yurios/.env` on Claw.
 
-## Status
+## Status (2026-09-12)
 
-See the bottom of this page for what was verified on the last deploy.
+Running as `reyna-yurios.service` on branch `reyna/foundation`, reachable at
+`http://100.68.127.104:8768/` (Tailscale) and on the LAN, owner token in `.env` on Claw. The
+old text preview service is stopped and disabled; the pre-YuriOS app on port 8452 is untouched.
+
+Verified on this deploy: import and approve through the switchboard, the authored cold open on
+first contact, three text turns in her register (lowercase, multi-bubble, praise reaction,
+no em-dashes, no narration), her prompt carrying no spoken-style block, no placeholder lines,
+no body claim and no reasoning token, and the "no screen is showing your body" situation line
+on a text turn. Not yet verified: a browser session over Tailscale, Telegram (no bot yet), voice
+(not installed), the mind's overnight DREAM, any multi-day behaviour.
+
+Waiting on the owner: a @BotFather token for Telegram; `sudo apt install espeak-ng` for Kokoro.
 
 ## First deploy
 
