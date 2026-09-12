@@ -1,0 +1,18 @@
+# Reyna on Claw: the YuriOS daemon as a systemd *user* unit.
+#   cp deploy/claw/reyna-yurios.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now reyna-yurios
+# Lingering must be on (`loginctl enable-linger $USER`) so she survives logout.
+[Unit]
+Description=Reyna (YuriOS)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=%h/reyna-yurios
+ExecStart=%h/reyna-yurios/.venv/bin/python -m yurios.cli start --foreground
+Restart=on-failure
+RestartSec=5
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=default.target
